@@ -1,0 +1,150 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <math.h>
+
+std::istream& input = std::cin;
+std::ostream& output = std::cout;
+
+using namespace std;
+
+class Matrix{
+    std::vector<std::vector<int>> matrix;
+    int num_rows;
+    int num_cols;
+public:
+    Matrix();
+    Matrix(int num_rows, int num_cols);
+    void Reset(int num_rows, int num_cols);
+    int At(int row, int col) const;
+    int& At(int row, int col);
+    int GetNumRows() const;
+    int GetNumColumns() const;
+    bool static CompareSize(const Matrix& matrix1, const Matrix& matrix2);
+};
+
+Matrix::Matrix() {
+    matrix = std::vector<std::vector<int>>(0, std::vector<int>(0));
+    num_rows = 0;
+    num_cols = 0;
+}
+
+Matrix::Matrix(const int num_rows, const int num_cols) {
+    Reset(num_rows, num_cols);
+}
+
+void Matrix::Reset(const int num_rows, const int num_cols) {
+    if (num_rows < 0 || num_cols < 0) {
+        throw std::out_of_range("");
+    }
+    if (num_cols == 0 || num_rows == 0) {
+        this->num_rows = this->num_cols = 0;
+    } else {
+        this->num_rows = num_rows;
+        this->num_cols = num_cols;
+    }
+    matrix.assign(this->num_rows, std::vector<int>(this->num_cols, 0));
+}
+
+int Matrix::At(const int row, const int col) const {
+    if (row < 0 || row > num_rows - 1 || col < 0 || col > num_cols - 1) {
+        throw std::out_of_range("");
+    }
+    return matrix[row][col];
+}
+
+int& Matrix::At(const int row, const int col) {
+    if (row < 0 || row > num_rows - 1 || col < 0 || col > num_cols - 1) {
+        throw std::out_of_range("");
+    }
+    return matrix[row][col];
+}
+
+int Matrix::GetNumRows() const {
+    return num_rows;
+}
+
+int Matrix::GetNumColumns() const {
+    return num_cols;
+}
+
+bool Matrix::CompareSize(const Matrix &matrix1, const Matrix &matrix2) {
+    int num_rows1 = matrix1.GetNumRows();
+    int num_rows2 = matrix2.GetNumRows();
+    int num_cols1 = matrix1.GetNumColumns();
+    int num_cols2 = matrix2.GetNumColumns();
+    return num_rows1 == num_rows2 && num_cols1 == num_cols2;
+}
+
+std::istream& operator>>(std::istream& stream, Matrix& matrix) {
+    int num_rows, num_cols;
+    stream >> num_rows >> num_cols;
+    matrix = Matrix(num_rows, num_cols);
+    for (int row = 0; row < num_rows; ++row) {
+        for (int column = 0; column < num_cols; ++column) {
+            stream >> matrix.At(row, column);
+        }
+    }
+    return stream;
+}
+
+std::ostream& operator<<(std::ostream& stream, const Matrix& matrix) {
+    int num_rows = matrix.GetNumRows();
+    int num_cols = matrix.GetNumColumns();
+    stream << num_rows << ' ' << num_cols << std::endl;
+    for (int row = 0; row < num_rows; ++row) {
+        for (int column = 0; column < num_cols; ++column) {
+            stream << matrix.At(row, column);
+            if (column != num_cols - 1) {
+                stream << ' ';
+            }
+        }
+        stream << std::endl;
+    }
+    return stream;
+}
+
+bool operator==(const Matrix& matrix1, const Matrix& matrix2) {
+    if (!Matrix::CompareSize(matrix1, matrix2))
+        return false;
+    int num_rows = matrix1.GetNumRows();
+    int num_cols = matrix1.GetNumColumns();
+    for (int row = 0; row < num_rows; ++row) {
+        for (int column = 0; column < num_cols; ++column) {
+            if (matrix1.At(row, column) != matrix2.At(row, column)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+Matrix operator+(const Matrix& matrix1, const Matrix& matrix2) {
+    if (!Matrix::CompareSize(matrix1, matrix2))
+        throw std::invalid_argument("");
+    int num_rows = matrix1.GetNumRows();
+    int num_cols = matrix1.GetNumColumns();
+
+    Matrix matrix(num_rows, num_cols);
+    for (int row = 0; row < num_rows; ++row) {
+        for (int column = 0; column < num_cols; ++column) {
+            matrix.At(row, column) = matrix1.At(row, column) + matrix2.At(row, column);
+        }
+    }
+    return matrix;
+}
+
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    input.tie(nullptr);
+    output.tie(nullptr);
+
+    Matrix one;
+    Matrix two;
+
+    std::cin >> one >> two;
+    std::cout << one + two;
+    return 0;
+}
