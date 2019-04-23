@@ -1,0 +1,150 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <set>
+#include <map>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+
+class Rational {
+private:
+    int numerator;
+    int denominator;
+    int NodCalculation() const;
+    void Updating();
+public:
+    Rational();
+    Rational(int numerator, int denominator);
+
+    int Numerator() const;
+    int Denominator() const;
+    bool operator==(const Rational& rational) const;
+    bool operator<(const Rational& rational) const;
+    Rational operator+(const Rational& rational);
+    Rational operator-(const Rational& rational);
+    Rational operator*(const Rational& rational);
+    Rational operator/(const Rational& rational);
+    friend std::istream& operator>>(std::istream& input, Rational& rational);
+    friend std::ostream& operator<<(std::ostream& output, const Rational& rational);
+};
+
+Rational::Rational() {
+    numerator = 0;
+    denominator = 1;
+}
+
+Rational::Rational(int numerator, int denominator) {
+    this->numerator = numerator;
+    this->denominator = denominator;
+    if (denominator == 0) {
+        throw std::invalid_argument("");
+    }
+    Updating();
+}
+
+void Rational::Updating() {
+    int nod = NodCalculation();
+    numerator = numerator / nod;
+    denominator = denominator / nod;
+    if (!numerator) {
+        denominator = 1;
+    }
+    if (denominator < 0 && numerator > 0) {
+        denominator = denominator * -1;
+        numerator = numerator * -1;
+    } else if (denominator < 0 && numerator < 0) {
+        denominator = denominator * -1;
+        numerator = numerator * -1;
+    }
+}
+
+int Rational::NodCalculation() const {
+    int a = numerator;
+    int b = denominator;
+    while (b != 0) {
+        a = a % b;
+        std::swap(a, b);
+    }
+    return a;
+}
+
+int Rational::Numerator() const {
+    return numerator;
+}
+
+int Rational::Denominator() const {
+    return denominator;
+}
+
+bool Rational::operator==(const Rational& rational) const {
+    return this->numerator == rational.Numerator() && this->denominator == rational.Denominator();
+}
+
+bool Rational::operator<(const Rational& rational) const {
+    if (this->denominator == rational.Denominator()) {
+        return  this->numerator < rational.Numerator();
+    }
+    return this->numerator * rational.Denominator() < rational.Numerator() * this->denominator;
+}
+
+Rational Rational::operator+(const Rational &rational) {
+    int numerator = this->numerator * rational.Denominator() + rational.Numerator() * this->Denominator();
+    int denominator = this->denominator * rational.denominator;
+    return {numerator, denominator};
+}
+
+Rational Rational::operator-(const Rational &rational) {
+    int numerator = this->numerator * rational.Denominator() - rational.Numerator() * this->Denominator();
+    int denominator = this->denominator * rational.denominator;
+    return {numerator, denominator};
+}
+
+Rational Rational::operator*(const Rational &rational) {
+    int numerator = this->numerator * rational.Numerator();
+    int denominator = this->denominator * rational.denominator;
+    return {numerator, denominator};
+}
+
+Rational Rational::operator/(const Rational &rational) {
+    if (rational.Numerator() == 0) {
+        throw std::domain_error("");
+    }
+    int numerator = this->numerator * rational.Denominator();
+    int denominator = this->denominator * rational.Numerator();
+    return {numerator, denominator};
+}
+
+std::istream& operator>>(std::istream& input, Rational& rational) {
+    input >> rational.numerator;
+    input.ignore(1);
+    input >> rational.denominator;
+    rational.Updating();
+    return input;
+}
+
+std::ostream& operator<<(std::ostream& output, const Rational& rational) {
+    output << rational.numerator << '/' << rational.denominator;
+    return output;
+}
+
+using namespace std;
+
+int main() {
+    try {
+        Rational r(1, 0);
+        cout << "Doesn't throw in case of zero denominator" << endl;
+        return 1;
+    } catch (invalid_argument&) {
+    }
+
+    try {
+        auto x = Rational(1, 2) / Rational(0, 1);
+        cout << "Doesn't throw in case of division by zero" << endl;
+        return 2;
+    } catch (domain_error&) {
+    }
+
+    cout << "OK" << endl;
+    return 0;
+}
