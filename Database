@@ -1,0 +1,182 @@
+#include <iostream>
+#include <string>
+#include <set>
+#include <map>
+#include <sstream>
+#include <iomanip>
+
+class Date {
+    int year = 0;
+    int month = 0;
+    int day = 0;
+public:
+    int GetYear() const;
+    int GetMonth() const;
+    int GetDay() const;
+
+    friend std::istream& operator>>(std::istream& stream, Date& date);
+    friend std::ostream& operator<<(std::ostream& stream, const Date& date);
+};
+
+int Date::GetYear() const {
+    return year;
+}
+
+int Date::GetMonth() const {
+    return month;
+}
+
+int Date::GetDay() const {
+    return day;
+}
+
+bool operator<(const Date& lhs, const Date& rhs) {
+    if (lhs.GetYear() == rhs.GetYear()) {
+        if (lhs.GetMonth() == rhs.GetMonth()) {
+            return lhs.GetDay() < rhs.GetDay();
+        } else {
+            return lhs.GetMonth() < rhs.GetMonth();
+        }
+    } else {
+        return lhs.GetYear() < rhs.GetYear();
+    }
+}
+
+std::istream& operator>>(std::istream& stream, Date& date) {
+    std::stringstream ss;
+    std::string date_format, check;
+    stream >> date_format;
+    ss << date_format;
+    char first_symbol = ' ', second_symbol = ' ';
+    if (ss >> date.year >> first_symbol >> date.month >> second_symbol >> date.day) {
+        if (ss >> check) {
+            throw std::runtime_error("Wrong date format: " + date_format);
+        }
+        if (!(date.month > 0 && date.month < 13)) {
+            throw std::runtime_error("Month value is invalid: " + std::to_string(date.month));
+        }
+        if (!(date.day > 0 && date.day < 32)) {
+            throw std::runtime_error("Day value is invalid: " + std::to_string(date.day));
+        }
+    } else {
+        throw std::runtime_error("Wrong date format: " + date_format);
+    }
+    return stream;
+}
+
+std::ostream& operator<<(std::ostream& stream, const Date& date) {
+    stream << std::setfill('0');
+    stream << std::setw(4) << date.year << '-';
+    stream << std::setw(2) << date.month << '-';
+    stream << std::setw(2) << date.day;
+    return stream;
+}
+
+class Database {
+    std::map<Date, std::set<std::string>> base;
+public:
+    void AddEvent(const Date& date, const std::string& event);
+    bool DeleteEvent(const Date& date, const std::string& event);
+    int  DeleteDate(const Date& date);
+    std::string DeleteChoice(std::stringstream& ss, const Date& date);
+    std::string Find(const Date& date) const;
+
+    void Print() const;
+};
+
+void Database::AddEvent(const Date &date, const std::string &event) {
+    base[date].insert(event);
+}
+
+bool Database::DeleteEvent(const Date &date, const std::string& event) {
+    if (base.count(date) == 0) {
+        return false;
+    }
+    std::set<std::string> events = base[date];
+    for (const auto& saved_event : events) {
+        if (saved_event == event) {
+            base[date].erase(saved_event);
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string Database::Find(const Date &date) const {
+    std::string text_events;
+    if (base.count(date) == 0) {
+        text_events = '\n';
+        return text_events;
+    }
+    std::set<std::string> events = base.at(date);
+    for (const auto& event : events) {
+        text_events += event + '\n';
+    }
+    return text_events;
+}
+
+int Database::DeleteDate(const Date &date) {
+    int size = static_cast<int>(base[date].size());
+    base.erase(date);
+    return size;
+}
+
+void Database::Print() const {
+    for (const auto& date : base) {
+        std::set<std::string> events = base.at(date.first);
+        for (const auto& event : events) {
+            std::cout << date.first << ' ' << event << std::endl;
+        }
+    }
+}
+
+std::string Database::DeleteChoice(std::stringstream& ss, const Date& date) {
+    std::string event;
+    if (ss >> event) {
+        bool deleted = DeleteEvent(date, event);
+        if (deleted) {
+            return "Deleted successfully";
+        } else {
+            return "Event not found";
+        }
+    } else {
+        return "Deleted " + std::to_string(DeleteDate(date)) + " events";
+    }
+}
+
+int main() {
+    std::ios::ios_base::sync_with_stdio(false);
+    std::cout.tie(nullptr);
+    Database database;
+    Date date;
+    std::string command, action, event;
+    while (getline(std::cin, command)) {
+        if (command.empty()) {
+            continue;
+        }
+        std::stringstream ss;
+        ss << command;
+        ss >> action;
+        try {
+            if (action == "Add") {
+                ss >> date >> event;
+                database.AddEvent(date, event);
+            } else if (action == "Del") {
+                ss >> date;
+                std::cout << database.DeleteChoice(ss, date) << std::endl;
+            } else if (action == "Find") {
+                ss >> date;
+                std::cout << database.Find(date);
+            } else if (action == "Print") {
+                database.Print();
+            } else {
+                std::cout << "Unknown command: " << action << std::endl;
+            }
+        } catch (std::exception& ex) {
+            std::cout << ex.what();
+            break;
+        }
+    }
+
+    return 0;
+}
