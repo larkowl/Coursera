@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <algorithm>
+#include <utility>
 
 template <typename T>
 class SimpleVector {
@@ -10,11 +11,13 @@ public:
     SimpleVector();
     explicit SimpleVector(size_t size);
     SimpleVector(const SimpleVector& other);
+    SimpleVector(SimpleVector&& other);
     ~SimpleVector();
 
     T& operator[](size_t index);
     const T& operator[](size_t index) const;
     SimpleVector& operator=(const SimpleVector& other);
+    SimpleVector& operator=(SimpleVector&& other);
 
     T* begin();
     T* end();
@@ -23,7 +26,7 @@ public:
 
     size_t Size() const;
     size_t Capacity() const;
-    void PushBack(const T& value);
+    void PushBack(T value);
 
 private:
     size_t capacity;
@@ -42,9 +45,17 @@ SimpleVector<T>::SimpleVector(size_t size) : capacity(size), pointer_(size), dat
 template <typename T>
 SimpleVector<T>::SimpleVector(const SimpleVector& other) : data_(new T[other.Capacity()]),
     capacity(other.Capacity()), pointer_(other.pointer_) {
-        
-        std::copy(other.begin(), other.end(), begin());
+
+        std::move(other.begin(), other.end(), begin());
     }
+
+template <typename T>
+SimpleVector<T>::SimpleVector(SimpleVector&& other)  : data_(other.data_),
+capacity(other.Capacity()), pointer_(other.Size()) {
+
+    other.data_ = nullptr;
+    other.pointer_ = other.capacity = 0;
+}
 
 template <typename T>
 SimpleVector<T>::~SimpleVector() {
@@ -91,8 +102,20 @@ SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector &other) {
         data_ = new T[capacity];
     }
 
-    std::copy(other.begin(), other.end(), begin());
+    std::move(other.begin(), other.end(), begin());
     pointer_ = other.Size();
+
+    return *this;
+}
+
+template <typename T>
+SimpleVector<T>& SimpleVector<T>::operator=(SimpleVector &&other) {
+    data_ = other.data_;
+    capacity = other.capacity;
+    pointer_ = other.pointer_;
+
+    other.data_ = nullptr;
+    other.capacity = other.pointer_ = 0;
 
     return *this;
 }
@@ -116,14 +139,15 @@ const T& SimpleVector<T>::operator[](size_t index) const {
 }
 
 template <typename T>
-void SimpleVector<T>::PushBack(const T &value) {
+void SimpleVector<T>::PushBack(T value) {
     if (pointer_ >= capacity) {
         Resize();
     }
 
-    data_[pointer_] = value;
+    data_[pointer_] = std::move(value);
     pointer_ = pointer_ + 1;
 }
+
 
 template <typename T>
 void SimpleVector<T>::Resize() {
@@ -132,7 +156,7 @@ void SimpleVector<T>::Resize() {
         data_ = new T[capacity];
     } else {
         T* temporary = new T[capacity * 2];
-        std::copy(begin(), end(), temporary);
+        std::move(begin(), end(), temporary);
         delete[] data_;
         data_ = temporary;
         capacity = capacity * 2;
